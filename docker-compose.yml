@@ -1,7 +1,10 @@
 version: '2'
 services:
   cachet:
-    image: cachethq/docker:2.3.15
+    build:
+      context: .
+      args:
+        - cachet_ver=master
     environment:
       APP_KEY: overwriteme
       APP_LOG: errorlog
