@@ -1,34 +1,58 @@
-version: "3"
-
+version: '2'
 services:
-  postgres:
-    image: postgres:9.5
-    volumes:
-      - /var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    restart: always
   cachet:
     build:
       context: .
       args:
         - cachet_ver=master
-    ports:
-      - 80:8000
-    links:
-      - postgres:postgres
     environment:
-      - DB_DRIVER=pgsql
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_DATABASE=postgres
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
-      - DB_PREFIX=chq_
-      - APP_KEY=${APP_KEY:-null}
-      - APP_LOG=errorlog
-      - DEBUG=false
-    depends_on:
-      - postgres
-    restart: on-failure
+      APP_KEY: overwriteme
+      APP_LOG: errorlog
+      DB_DATABASE: cachetdb
+      DB_DRIVER: mysql
+      DB_HOST: cachet-dev.connectedfleet.io
+      DB_PASSWORD: overwriteme
+      DB_PORT: '3306'
+      DB_PREFIX: chq_
+      DB_USERNAME: overwriteme
+      DEBUG: 'false'
+    entrypoint:
+    - /bin/bash
+    ports:
+    - 2020:8000/tcp
+    secrets:
+    - mode: 444
+      uid: '0'
+      gid: '0'
+      source: cachet-app-key
+      target: APP_KEY
+    - mode: 444
+      uid: '0'
+      gid: '0'
+      source: cachet-db-password
+      target: DB_PASSWORD
+    - mode: 444
+      uid: '0'
+      gid: '0'
+      source: cachet-db-username
+      target: DB_USERNAME  
+    command:
+    - -c
+    - |-
+      . /run/secrets/APP_KEY \
+      && . /run/secrets/DB_USERNAME \
+      && . /run/secrets/DB_PASSWORD \
+      && /sbin/entrypoint.sh
+    labels:
+      traefik.port: '8000'
+      traefik.enable: 'true'
+      io.rancher.container.hostname_override: container_name
+      traefik.domain: dev.connectedfleet.io
+      traefik.alias: cachet
+secrets:
+  cachet-app-key:
+    external: 'true'
+  cachet-db-password:
+    external: 'true'
+  cachet-db-username:
+    external: 'true'
